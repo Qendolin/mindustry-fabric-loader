@@ -29,6 +29,7 @@ replay_pid*
 # Gradle Files
 .gradle
 build
+!gradle/wrapper/gradle-wrapper.jar
 
 # Stuff
 fabric-dependencies
