@@ -3,8 +3,6 @@ plugins {
     id 'maven-publish'
 }
 
-def ENV = System.getenv()
-
 repositories {
     mavenCentral()
     maven {
