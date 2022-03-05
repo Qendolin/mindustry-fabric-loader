@@ -1,0 +1,113 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+def ENV = System.getenv()
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://repo.spongepowered.org/maven/"
+    }
+    maven {
+        url "https://maven.fabricmc.net/"
+    }
+    maven {
+        url 'https://jitpack.io'
+    }
+}
+
+sourceCompatibility = '16'
+targetCompatibility = '16'
+
+version = providerVersion
+group = "com.qenolin"
+archivesBaseName = "MindutryGameProvider"
+
+dependencies {
+    implementation 'com.github.Anuken:Mindustry:v135'
+//    implementation group: 'org.jetbrains', name: 'intellij-fernflower', version: '1.2.1.16'
+    implementation group: 'net.fabricmc', name: 'fabric-loader', version: loaderVersion
+    implementation 'org.jetbrains:annotations:20.1.0'
+
+    //mixin requirements:
+    compileOnly 'org.spongepowered:mixin:' + mixinVersion
+//    compileOnly 'com.google.guava:guava:21.0'
+//    compileOnly group: 'com.google.code.gson', name: 'gson', version: '2.8.7'
+    compileOnly group: 'org.ow2.asm', name: 'asm', version: asmVersion
+    compileOnly group: 'org.ow2.asm', name: 'asm-analysis', version: asmVersion
+    compileOnly group: 'org.ow2.asm', name: 'asm-commons', version: asmVersion
+    compileOnly group: 'org.ow2.asm', name: 'asm-tree', version: asmVersion
+    compileOnly group: 'org.ow2.asm', name: 'asm-util', version: asmVersion
+
+
+//    implementation 'org.tinylog:tinylog-api:2.4.1'
+//    implementation 'org.tinylog:tinylog-impl:2.4.1'
+    implementation "net.fabricmc:sponge-mixin:0.11.0+mixin." + mixinVersion
+    implementation "net.fabricmc:access-widener:2.1.0"
+    implementation "net.fabricmc:tiny-remapper:0.6.0"
+//    implementation "net.fabricmc:tiny-mappings-parser:0.3.0+build.17"
+//    implementation "com.fasterxml.jackson.core:jackson-databind:2.13.1"
+
+}
+
+java {
+    withSourcesJar()
+}
+
+task exportDependencies(type: Copy) {
+    doFirst {
+        delete "fabric-dependencies"
+    }
+
+    configurations.implementation.setCanBeResolved(true)
+    configurations.api.setCanBeResolved(true)
+    from configurations.implementation {
+        exclude group: "com.github.Anuken"
+        exclude group: "com.google.guava"
+        exclude group: "com.google.code.gson"
+        exclude group: "org.jetbrains"
+    }
+    into "fabric-dependencies"
+}
+
+jar {
+    manifest {
+        attributes(
+                'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' '),
+                'Specification-Version': 8.0,
+                'Multi-Release': 'true'
+        )
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact(jar)
+            artifact(sourcesJar)
+            pom.withXml {
+                subprojects.each {
+                    if (it.name != project.testmods_project) {
+                        depNode.appendNode("groupId", it.group)
+                        depNode.appendNode("artifactId", it.name)
+                        depNode.appendNode("version", it.version)
+                        depNode.appendNode("scope", "compile")
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+    }
+}
+
