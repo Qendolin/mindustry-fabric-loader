@@ -1,5 +1,5 @@
 before_install:
   - wget https://raw.githubusercontent.com/sormuras/bach/releases/11/install-jdk.sh
-  - source ./install-jdk.sh --feature 16 --license GPL
+  - source ./install-jdk.sh --feature 16
 jdk:
   - openjdk16
