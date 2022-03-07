@@ -20,34 +20,28 @@ sourceCompatibility = "16"
 targetCompatibility = "16"
 compileJava.options.release.set(16)
 
-version = providerVersion
+version = project_version
 group = "com.qenolin"
 archivesBaseName = "MindutryGameProvider"
 
 dependencies {
-//    implementation 'com.github.Anuken:Mindustry:v135'
-//    implementation group: 'org.jetbrains', name: 'intellij-fernflower', version: '1.2.1.16'
-    api group: 'net.fabricmc', name: 'fabric-loader', version: loaderVersion
     implementation 'org.jetbrains:annotations:22.0.0'
 
-    //mixin requirements:
-//    compileOnly 'org.spongepowered:mixin:' + mixinVersion
-////    compileOnly 'com.google.guava:guava:21.0'
-////    compileOnly group: 'com.google.code.gson', name: 'gson', version: '2.8.7'
-//    compileOnly group: 'org.ow2.asm', name: 'asm', version: asmVersion
-//    compileOnly group: 'org.ow2.asm', name: 'asm-analysis', version: asmVersion
-//    compileOnly group: 'org.ow2.asm', name: 'asm-commons', version: asmVersion
-//    compileOnly group: 'org.ow2.asm', name: 'asm-tree', version: asmVersion
-//    compileOnly group: 'org.ow2.asm', name: 'asm-util', version: asmVersion
+    api group: 'net.fabricmc', name: 'fabric-loader', version: loader_version
 
+    api "org.ow2.asm:asm:${project.asm_version}"
+    api "org.ow2.asm:asm-analysis:${project.asm_version}"
+    api "org.ow2.asm:asm-commons:${project.asm_version}"
+    api "org.ow2.asm:asm-tree:${project.asm_version}"
+    api "org.ow2.asm:asm-util:${project.asm_version}"
 
-//    api 'org.tinylog:tinylog-api:2.4.1'
-//    api 'org.tinylog:tinylog-impl:2.4.1'
-    api "net.fabricmc:sponge-mixin:0.11.2+mixin." + mixinVersion
-    api "net.fabricmc:access-widener:2.1.0"
-    api "net.fabricmc:tiny-remapper:0.6.0"
-//    api "net.fabricmc:tiny-mappings-parser:0.3.0+build.17"
-//    api "com.fasterxml.jackson.core:jackson-databind:2.13.1"
+    api("net.fabricmc:sponge-mixin:${project.mixin_version}") {
+        exclude module: 'launchwrapper'
+        exclude module: 'guava'
+    }
+    api 'net.fabricmc:tiny-mappings-parser:0.3.0+build.17'
+    api 'net.fabricmc:tiny-remapper:0.8.1'
+    api 'net.fabricmc:access-widener:2.1.0'
 
 }
 
@@ -63,7 +57,6 @@ task exportDependencies(type: Copy) {
     configurations.implementation.setCanBeResolved(true)
     configurations.api.setCanBeResolved(true)
     from configurations.implementation {
-        exclude group: "com.github.Anuken"
         exclude group: "com.google.guava"
         exclude group: "com.google.code.gson"
         exclude group: "org.jetbrains"
