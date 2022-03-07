@@ -21,11 +21,11 @@ targetCompatibility = "16"
 compileJava.options.release.set(16)
 
 version = project_version
-group = "com.qenolin"
+group = "com.qendolin"
 archivesBaseName = "MindutryGameProvider"
 
 dependencies {
-    implementation 'org.jetbrains:annotations:22.0.0'
+    testImplementation 'org.jetbrains:annotations:22.0.0'
 
     api group: 'net.fabricmc', name: 'fabric-loader', version: loader_version
 
@@ -88,6 +88,16 @@ publishing {
             artifact(jar)
             artifact(sourcesJar)
             pom.withXml {
+                def dependenciesNode = asNode().appendNode('dependencies')
+
+                //Iterate over the compile dependencies (we don't want the test ones), adding a <dependency> node for each
+                configurations.implementation.allDependencies.each {
+                    def dependencyNode = dependenciesNode.appendNode('dependency')
+                    dependencyNode.appendNode('groupId', it.group)
+                    dependencyNode.appendNode('artifactId', it.name)
+                    dependencyNode.appendNode('version', it.version)
+                }
+
                 subprojects.each {
                     if (it.name != project.testmods_project) {
                         depNode.appendNode("groupId", it.group)
