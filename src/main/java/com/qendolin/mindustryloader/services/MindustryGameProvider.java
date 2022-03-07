@@ -14,7 +14,6 @@ import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.SystemProperties;
 import net.fabricmc.loader.impl.util.log.Log;
 import net.fabricmc.loader.impl.util.log.LogCategory;
-import net.fabricmc.loader.impl.util.version.StringVersion;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -62,11 +61,13 @@ public class MindustryGameProvider implements GameProvider {
 
     @Override
     public String getRawGameVersion() {
+        if (gameVersion == null) return "0.0.0";
         return gameVersion.toString();
     }
 
     @Override
     public String getNormalizedGameVersion() {
+        if (gameVersion == null) return "0.0.0";
         return gameVersion.toStringVersion().getFriendlyString();
     }
 
