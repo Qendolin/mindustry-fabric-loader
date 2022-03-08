@@ -9,7 +9,7 @@ As for now only the desktop client and server is supported.
 
 ### Loading Mods
 
-TODO
+
 
 ### Developing Mods
 

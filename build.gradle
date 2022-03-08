@@ -108,8 +108,19 @@ publishing {
                 }
             }
         }
+        gpr(MavenPublication) {
+            from components.java
+        }
     }
     repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/Qendolin/mindustry-fabric-loader")
+            credentials {
+                username = project.findProperty("gpr.user") ?: System.getenv("GH_USERNAME")
+                password = project.findProperty("gpr.key") ?: System.getenv("GH_TOKEN")
+            }
+        }
     }
 }
 
