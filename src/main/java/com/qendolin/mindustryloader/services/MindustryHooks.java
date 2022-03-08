@@ -13,12 +13,18 @@ import java.nio.file.Paths;
 
 public final class MindustryHooks {
     public static final String INTERNAL_NAME = MindustryHooks.class.getName().replace('.', '/');
-    public static void init() {
-        Path runDir = Paths.get(".");
 
+    public static void initClient() {
+        Path runDir = Paths.get(".");
         FabricLoaderImpl.INSTANCE.prepareModInit(runDir, FabricLoaderImpl.INSTANCE.getGameInstance());
         EntrypointUtils.invoke("main", ModInitializer.class, ModInitializer::onInitialize);
         EntrypointUtils.invoke("client", ClientModInitializer.class, ClientModInitializer::onInitializeClient);
+    }
+
+    public static void initServer() {
+        Path runDir = Paths.get(".");
+        FabricLoaderImpl.INSTANCE.prepareModInit(runDir, FabricLoaderImpl.INSTANCE.getGameInstance());
+        EntrypointUtils.invoke("main", ModInitializer.class, ModInitializer::onInitialize);
         EntrypointUtils.invoke("server", DedicatedServerModInitializer.class, DedicatedServerModInitializer::onInitializeServer);
     }
 

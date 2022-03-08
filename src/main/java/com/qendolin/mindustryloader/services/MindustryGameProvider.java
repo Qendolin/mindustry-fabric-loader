@@ -21,11 +21,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.zip.ZipFile;
+import java.util.stream.Collectors;
 
 public class MindustryGameProvider implements GameProvider {
 
-    private static final String[] ENTRYPOINTS = new String[]{"mindustry.desktop.DesktopLauncher", "mindustry.server.mindustry.server"};
+    public static final String CLIENT_ENTRYPOINT = "mindustry.ClientLauncher";
+    public static final String CLIENT_MAIN = "mindustry.desktop.DesktopLauncher";
+    public static final String SERVER_ENTRYPOINT = "mindustry.server.ServerLauncher";
+    public static final String SERVER_MAIN = "mindustry.server.ServerLauncher";
+    private static final String[] ENTRYPOINTS = new String[]{
+            CLIENT_ENTRYPOINT, SERVER_ENTRYPOINT
+    };
     private static final Set<String> SENSITIVE_ARGS = new HashSet<>(Arrays.asList(
             // all lowercase without --
             "savedir",
@@ -34,12 +40,8 @@ public class MindustryGameProvider implements GameProvider {
 
     private Arguments arguments;
     private String entrypoint;
-    private Path launchDir;
-    private Path libDir;
     private Path gameJar;
-    private boolean development = false;
-    private final List<Path> miscGameLibraries = new ArrayList<>();
-    private static MindustryVersion gameVersion;
+    private MindustryVersion gameVersion;
 
     private static final GameTransformer TRANSFORMER = new GameTransformer(
             new MindustryEntrypointPatch(),
@@ -73,18 +75,17 @@ public class MindustryGameProvider implements GameProvider {
 
     @Override
     public Collection<BuiltinMod> getBuiltinMods() {
-
         HashMap<String, String> contactInfo = new HashMap<>();
         contactInfo.put("homepage", "https://mindustrygame.github.io/");
 
-        BuiltinModMetadata.Builder minicraftMetaData =
+        BuiltinModMetadata.Builder mindustryMetaData =
                 new BuiltinModMetadata.Builder(getGameId(), getNormalizedGameVersion())
                         .setName(getGameName())
                         .addAuthor("Anuke", contactInfo)
                         .setContact(new ContactInformationImpl(contactInfo))
                         .setDescription("A sandbox tower-defense game.");
 
-        return Collections.singletonList(new BuiltinMod(Collections.singletonList(gameJar), minicraftMetaData.build()));
+        return Collections.singletonList(new BuiltinMod(Collections.singletonList(gameJar), mindustryMetaData.build()));
     }
 
     @Override
@@ -118,52 +119,35 @@ public class MindustryGameProvider implements GameProvider {
 
     @Override
     public boolean locateGame(FabricLauncher launcher, String[] args) {
-        this.arguments = new Arguments();
+        arguments = new Arguments();
         arguments.parse(args);
 
-        Map<Path, ZipFile> zipFiles = new HashMap<>();
+        List<String> gameLocations = new ArrayList<>();
+        if(System.getProperty(SystemProperties.GAME_JAR_PATH) != null) {
+            gameLocations.add(System.getProperty(SystemProperties.GAME_JAR_PATH));
+        }
+        gameLocations.add("./jre/desktop.jar");
+        gameLocations.add("./Mindustry.jar");
+        gameLocations.add("./desktop-release.jar");
+        gameLocations.add("./desktop.jar");
 
-        if(Objects.equals(System.getProperty(SystemProperties.DEVELOPMENT), "true")) {
-            development = true;
+        List<Path> jarPaths = gameLocations.stream()
+                .map(path -> Paths.get(path).toAbsolutePath().normalize())
+                .filter(Files::exists).toList();
+        GameProviderHelper.FindResult result = GameProviderHelper.findFirst(jarPaths, new HashMap<>(), true, ENTRYPOINTS);
+
+        if(result == null || result.path == null) {
+            Log.error(LogCategory.GAME_PROVIDER, "Could not locate game. Looked at: \n" + gameLocations.stream()
+                    .map(path -> " - " + Paths.get(path).toAbsolutePath().normalize())
+                    .collect(Collectors.joining("\n")));
+            return false;
         }
 
-        try {
-            String gameJarProperty = System.getProperty(SystemProperties.GAME_JAR_PATH);
-            GameProviderHelper.FindResult result = null;
-            if(gameJarProperty == null) {
-                gameJarProperty = "./jre/desktop.jar";
-            }
-            if(gameJarProperty != null) {
-                Path path = Paths.get(gameJarProperty);
-                if (!Files.exists(path)) {
-                    throw new RuntimeException("Game jar configured through " + SystemProperties.GAME_JAR_PATH + " system property doesn't exist");
-                }
-
-                result = GameProviderHelper.findFirst(Collections.singletonList(path), zipFiles, true, ENTRYPOINTS);
-            }
-
-            if(result == null) {
-                return false;
-            }
-
-            entrypoint = result.name;
-            gameJar = result.path;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+        entrypoint = result.name;
+        gameJar = result.path;
+        gameVersion = MindustryVersionLookup.getVersionFromGameJar(gameJar);
         processArgumentMap(arguments);
-
-        try {
-            gameVersion = MindustryVersionLookup.getVersionFromGameJar(gameJar);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
         return true;
-
     }
 
     @Override
@@ -179,15 +163,19 @@ public class MindustryGameProvider implements GameProvider {
     @Override
     public void unlockClassPath(FabricLauncher launcher) {
         launcher.addToClassPath(gameJar);
-
-        for(Path lib : miscGameLibraries) {
-            launcher.addToClassPath(lib);
-        }
     }
 
     @Override
     public void launch(ClassLoader loader) {
-        String targetClass = entrypoint;
+        String targetClass;
+
+        if(entrypoint.equals(CLIENT_ENTRYPOINT)) {
+            targetClass = CLIENT_MAIN;
+        } else if(entrypoint.equals(SERVER_ENTRYPOINT)) {
+            targetClass = SERVER_MAIN;
+        } else {
+            throw new RuntimeException("Unknown entrypoint " + entrypoint + ".");
+        }
 
         try {
             Class<?> c = loader.loadClass(targetClass);
@@ -229,7 +217,6 @@ public class MindustryGameProvider implements GameProvider {
         }
 
         if (writeIdx < ret.length) ret = Arrays.copyOf(ret, writeIdx);
-
         return ret;
     }
 
@@ -238,9 +225,8 @@ public class MindustryGameProvider implements GameProvider {
             arguments.put("gameDir", getLaunchDirectory(arguments).toAbsolutePath().normalize().toString());
         }
 
-        launchDir = Path.of(arguments.get("gameDir"));
+        Path launchDir = Path.of(arguments.get("gameDir"));
         Log.debug(LogCategory.GAME_PROVIDER, "Launch directory is " + launchDir);
-        libDir = launchDir.resolve(Path.of("./lib"));
     }
 
     private static Path getLaunchDirectory(Arguments arguments) {
