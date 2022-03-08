@@ -1,7 +1,7 @@
 # Fabric GameProvider for Mindustry
 
 This library enables [fabric](https://fabricmc.net/) mod development for the game [Mindustry](https://mindustrygame.github.io/) by Anuke.
-As for now only the desktop version is supported.
+As for now only the desktop client and server is supported.
 
 ## Usage
 

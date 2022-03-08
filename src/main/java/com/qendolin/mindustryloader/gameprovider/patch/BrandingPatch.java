@@ -1,6 +1,6 @@
-package com.qendolin.mindustryloader.patch;
+package com.qendolin.mindustryloader.gameprovider.patch;
 
-import com.qendolin.mindustryloader.services.MindustryHooks;
+import com.qendolin.mindustryloader.gameprovider.services.MindustryHooks;
 import net.fabricmc.loader.impl.game.patch.GamePatch;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
 import net.fabricmc.loader.impl.util.log.Log;

@@ -1,4 +1,4 @@
-package com.qendolin.mindustryloader.services;
+package com.qendolin.mindustryloader.gameprovider.services;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.DedicatedServerModInitializer;

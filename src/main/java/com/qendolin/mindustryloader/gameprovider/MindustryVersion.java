@@ -1,4 +1,4 @@
-package com.qendolin.mindustryloader;
+package com.qendolin.mindustryloader.gameprovider;
 
 import net.fabricmc.loader.impl.util.version.StringVersion;
 

@@ -1,7 +1,7 @@
-package com.qendolin.mindustryloader.patch;
+package com.qendolin.mindustryloader.gameprovider.patch;
 
-import com.qendolin.mindustryloader.services.MindustryGameProvider;
-import com.qendolin.mindustryloader.services.MindustryHooks;
+import com.qendolin.mindustryloader.gameprovider.services.MindustryHooks;
+import com.qendolin.mindustryloader.gameprovider.services.MindustryGameProvider;
 import net.fabricmc.loader.impl.game.patch.GamePatch;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
 import net.fabricmc.loader.impl.util.log.Log;
@@ -10,10 +10,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
-import org.spongepowered.asm.mixin.injection.points.BeforeFinalReturn;
-import org.spongepowered.asm.mixin.injection.throwables.InvalidInjectionException;
 
-import java.util.ListIterator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 

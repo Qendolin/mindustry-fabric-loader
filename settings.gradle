@@ -1,1 +1,2 @@
 rootProject.name = 'mindustry-fabric-loader'
+include 'installer'

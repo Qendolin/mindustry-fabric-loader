@@ -21,7 +21,7 @@ targetCompatibility = "16"
 compileJava.options.release.set(16)
 
 version = project_version
-group = "com.qendolin"
+group = "com.qendolin.mindustryloader"
 archivesBaseName = "MindutryGameProvider"
 
 dependencies {

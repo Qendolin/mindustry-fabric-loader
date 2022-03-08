@@ -1,8 +1,8 @@
-package com.qendolin.mindustryloader.services;
+package com.qendolin.mindustryloader.gameprovider.services;
 
-import com.qendolin.mindustryloader.MindustryVersion;
-import com.qendolin.mindustryloader.patch.BrandingPatch;
-import com.qendolin.mindustryloader.patch.MindustryEntrypointPatch;
+import com.qendolin.mindustryloader.gameprovider.MindustryVersion;
+import com.qendolin.mindustryloader.gameprovider.patch.BrandingPatch;
+import com.qendolin.mindustryloader.gameprovider.patch.MindustryEntrypointPatch;
 import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.GameProviderHelper;

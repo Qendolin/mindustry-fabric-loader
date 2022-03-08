@@ -1,6 +1,6 @@
-package com.qendolin.mindustryloader.services;
+package com.qendolin.mindustryloader.gameprovider.services;
 
-import com.qendolin.mindustryloader.MindustryVersion;
+import com.qendolin.mindustryloader.gameprovider.MindustryVersion;
 import net.fabricmc.loader.impl.util.ExceptionUtil;
 import net.fabricmc.loader.impl.util.FileSystemUtil;
 
