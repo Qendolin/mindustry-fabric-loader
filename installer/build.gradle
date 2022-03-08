@@ -19,13 +19,29 @@ dependencies {
     implementation 'com.jetbrains.intellij.java:java-gui-forms-rt:213.6777.58'
 }
 
+java {
+    withSourcesJar()
+}
+
 jar {
     manifest {
         attributes 'Main-Class': 'com.qendolin.mindustryloader.installer.MainView'
     }
 }
 
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+    }
+}
+
 task fatJar(type: Jar) {
+    group "build"
+
+    archiveClassifier.set("fat")
+
     manifest {
         attributes 'Main-Class': 'com.qendolin.mindustryloader.installer.MainView'
     }
@@ -36,5 +52,4 @@ task fatJar(type: Jar) {
         }
     }
     with jar
-
 }
