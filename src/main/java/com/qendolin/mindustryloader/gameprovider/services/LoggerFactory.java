@@ -38,14 +38,11 @@ public class LoggerFactory {
         });
         try {
             handler.setEncoding(StandardCharsets.UTF_8.name());
-        } catch (UnsupportedEncodingException ignored) {}
+        } catch (UnsupportedEncodingException ignored) {
+        }
 
         rootLogger.addHandler(handler);
         ROOT_LOGGER = rootLogger;
-    }
-
-    public static Logger getRootLogger() {
-        return ROOT_LOGGER;
     }
 
     public static Logger getLogger(String name) {
@@ -53,6 +50,10 @@ public class LoggerFactory {
         logger.setUseParentHandlers(true);
         logger.setParent(ROOT_LOGGER);
         return logger;
+    }
+
+    public static Logger getRootLogger() {
+        return ROOT_LOGGER;
     }
 
     public static Formatter getDefaultFormatter() {

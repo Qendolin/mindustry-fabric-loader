@@ -1,7 +1,7 @@
 package com.qendolin.mindustryloader.gameprovider.patch;
 
-import com.qendolin.mindustryloader.gameprovider.services.MindustryHooks;
 import com.qendolin.mindustryloader.gameprovider.services.MindustryGameProvider;
+import com.qendolin.mindustryloader.gameprovider.services.MindustryHooks;
 import net.fabricmc.loader.impl.game.patch.GamePatch;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
 import net.fabricmc.loader.impl.util.log.Log;
@@ -19,16 +19,16 @@ public class MindustryEntrypointPatch extends GamePatch {
     public void process(FabricLauncher launcher, Function<String, ClassReader> classSource,
                         Consumer<ClassNode> classEmitter) {
         String entrypoint = launcher.getEntrypoint();
-        Log.debug(LogCategory.GAME_PATCH,"Entrypoint is " + entrypoint);
+        Log.debug(LogCategory.GAME_PATCH, "Entrypoint is " + entrypoint);
         ClassNode entrypointClazz = readClass(classSource.apply(entrypoint));
-        if(entrypointClazz == null) {
-            throw new LinkageError ("Could not load entrypoint class " + entrypoint + "!");
+        if (entrypointClazz == null) {
+            throw new LinkageError("Could not load entrypoint class " + entrypoint + "!");
         }
         Log.debug(LogCategory.GAME_PATCH, "Entrypoint class is " + entrypointClazz);
 
-        if(entrypoint.equals(MindustryGameProvider.CLIENT_ENTRYPOINT)) {
+        if (entrypoint.equals(MindustryGameProvider.CLIENT_ENTRYPOINT)) {
             injectClientHook(entrypointClazz);
-        } else if(entrypoint.equals(MindustryGameProvider.SERVER_ENTRYPOINT)) {
+        } else if (entrypoint.equals(MindustryGameProvider.SERVER_ENTRYPOINT)) {
             injectServerHook(entrypointClazz);
         } else {
             throw new IllegalArgumentException("Unknown entrypoint " + entrypoint + ".");
@@ -39,7 +39,7 @@ public class MindustryEntrypointPatch extends GamePatch {
 
     private void injectClientHook(ClassNode entrypoint) {
         MethodNode initMethod = findMethod(entrypoint, (method) -> method.name.equals("init") && method.desc.equals("()V"));
-        if(initMethod == null) {
+        if (initMethod == null) {
             throw new NoSuchMethodError("Could not find init method in " + entrypoint + ".");
         }
 
@@ -53,7 +53,7 @@ public class MindustryEntrypointPatch extends GamePatch {
 
     private void injectServerHook(ClassNode entrypoint) {
         MethodNode initMethod = findMethod(entrypoint, (method) -> method.name.equals("init") && method.desc.equals("()V"));
-        if(initMethod == null) {
+        if (initMethod == null) {
             throw new NoSuchMethodError("Could not find init method in " + entrypoint + ".");
         }
 

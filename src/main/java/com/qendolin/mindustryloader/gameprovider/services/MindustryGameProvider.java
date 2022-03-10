@@ -39,40 +39,22 @@ public class MindustryGameProvider implements GameProvider {
             "savedir",
             "debug",
             "localclient"));
-
+    private static final GameTransformer TRANSFORMER = new GameTransformer(
+            new MindustryEntrypointPatch(),
+            new BrandingPatch());
     private Arguments arguments;
     private String entrypoint;
     private Path gameJar;
     private MindustryVersion gameVersion;
-
-    private static final GameTransformer TRANSFORMER = new GameTransformer(
-            new MindustryEntrypointPatch(),
-            new BrandingPatch());
 
     public MindustryVersion getGameVersion() {
         return gameVersion;
     }
 
     @Override
-    public String getGameId() {
-        return "mindustry";
-    }
-
-    @Override
-    public String getGameName() {
-        return "Mindustry";
-    }
-
-    @Override
     public String getRawGameVersion() {
         if (gameVersion == null) return "0.0.0";
         return gameVersion.toString();
-    }
-
-    @Override
-    public String getNormalizedGameVersion() {
-        if (gameVersion == null) return "0.0.0";
-        return gameVersion.toStringVersion().getFriendlyString();
     }
 
     @Override
@@ -91,6 +73,22 @@ public class MindustryGameProvider implements GameProvider {
     }
 
     @Override
+    public String getGameId() {
+        return "mindustry";
+    }
+
+    @Override
+    public String getNormalizedGameVersion() {
+        if (gameVersion == null) return "0.0.0";
+        return gameVersion.toStringVersion().getFriendlyString();
+    }
+
+    @Override
+    public String getGameName() {
+        return "Mindustry";
+    }
+
+    @Override
     public String getEntrypoint() {
         return entrypoint;
     }
@@ -102,6 +100,10 @@ public class MindustryGameProvider implements GameProvider {
         }
 
         return getLaunchDirectory(arguments);
+    }
+
+    private static Path getLaunchDirectory(Arguments arguments) {
+        return Paths.get(arguments.getOrDefault("gameDir", "."));
     }
 
     @Override
@@ -125,7 +127,7 @@ public class MindustryGameProvider implements GameProvider {
         arguments.parse(args);
 
         List<String> gameLocations = new ArrayList<>();
-        if(System.getProperty(SystemProperties.GAME_JAR_PATH) != null) {
+        if (System.getProperty(SystemProperties.GAME_JAR_PATH) != null) {
             gameLocations.add(System.getProperty(SystemProperties.GAME_JAR_PATH));
         }
         gameLocations.add("./jre/desktop.jar");
@@ -138,7 +140,7 @@ public class MindustryGameProvider implements GameProvider {
                 .filter(Files::exists).toList();
         GameProviderHelper.FindResult result = GameProviderHelper.findFirst(jarPaths, new HashMap<>(), true, ENTRYPOINTS);
 
-        if(result == null || result.path == null) {
+        if (result == null || result.path == null) {
             Log.error(LogCategory.GAME_PROVIDER, "Could not locate game. Looked at: \n" + gameLocations.stream()
                     .map(path -> " - " + Paths.get(path).toAbsolutePath().normalize())
                     .collect(Collectors.joining("\n")));
@@ -150,6 +152,15 @@ public class MindustryGameProvider implements GameProvider {
         gameVersion = MindustryVersionLookup.getVersionFromGameJar(gameJar);
         processArgumentMap(arguments);
         return true;
+    }
+
+    private void processArgumentMap(Arguments arguments) {
+        if (!arguments.containsKey("gameDir")) {
+            arguments.put("gameDir", getLaunchDirectory(arguments).toAbsolutePath().normalize().toString());
+        }
+
+        Path launchDir = Path.of(arguments.get("gameDir"));
+        Log.debug(LogCategory.GAME_PROVIDER, "Launch directory is " + launchDir);
     }
 
     @Override
@@ -169,15 +180,15 @@ public class MindustryGameProvider implements GameProvider {
 
     @Override
     public void launch(ClassLoader loader) {
-        if(FabricLoader.getInstance().isDevelopmentEnvironment()) {
+        if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
             LoggerFactory.getRootLogger().setLevel(Level.ALL);
         }
 
         String targetClass;
 
-        if(entrypoint.equals(CLIENT_ENTRYPOINT)) {
+        if (entrypoint.equals(CLIENT_ENTRYPOINT)) {
             targetClass = CLIENT_MAIN;
-        } else if(entrypoint.equals(SERVER_ENTRYPOINT)) {
+        } else if (entrypoint.equals(SERVER_ENTRYPOINT)) {
             targetClass = SERVER_MAIN;
         } else {
             throw new RuntimeException("Unknown entrypoint " + entrypoint + ".");
@@ -187,11 +198,9 @@ public class MindustryGameProvider implements GameProvider {
             Class<?> c = loader.loadClass(targetClass);
             Method m = c.getMethod("main", String[].class);
             m.invoke(null, (Object) arguments.toArray());
-        }
-        catch(InvocationTargetException e) {
+        } catch (InvocationTargetException e) {
             throw new FormattedException("Mindustry has crashed!", e.getCause());
-        }
-        catch(ReflectiveOperationException e) {
+        } catch (ReflectiveOperationException e) {
             throw new FormattedException("Failed to start Mindustry", e);
         }
     }
@@ -224,18 +233,5 @@ public class MindustryGameProvider implements GameProvider {
 
         if (writeIdx < ret.length) ret = Arrays.copyOf(ret, writeIdx);
         return ret;
-    }
-
-    private void processArgumentMap(Arguments arguments) {
-        if (!arguments.containsKey("gameDir")) {
-            arguments.put("gameDir", getLaunchDirectory(arguments).toAbsolutePath().normalize().toString());
-        }
-
-        Path launchDir = Path.of(arguments.get("gameDir"));
-        Log.debug(LogCategory.GAME_PROVIDER, "Launch directory is " + launchDir);
-    }
-
-    private static Path getLaunchDirectory(Arguments arguments) {
-        return Paths.get(arguments.getOrDefault("gameDir", "."));
     }
 }

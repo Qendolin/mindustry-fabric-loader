@@ -7,7 +7,10 @@ import net.harawata.appdirs.AppDirs;
 import net.harawata.appdirs.AppDirsFactory;
 
 import javax.swing.*;
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -42,31 +45,11 @@ public class Installer extends SwingWorker<Exception, String> {
         return null;
     }
 
-    @Override
-    protected void process(List<String> chunks) {
-        super.process(chunks);
-        for (String chunk : chunks) {
-            onLog.accept(chunk);
-        }
-    }
-
-    @Override
-    protected void done() {
-        super.done();
-        try {
-            onDone.accept(get());
-        } catch (Exception ignored) {}
-    }
-
-    private void log(String s) {
-        publish(s);
-    }
-
     private void install() throws Exception {
         log(" === Installing fabric " + FABRIC_LOADER_VERSION + " === ");
 
         Path gamePath = locateGame();
-        if(gamePath == null) {
+        if (gamePath == null) {
             log("Could not find game in specified directory.");
             return;
         } else {
@@ -74,10 +57,10 @@ public class Installer extends SwingWorker<Exception, String> {
         }
 
         log("Loading library definitions");
-        InputStream resource = getClass().getClassLoader().getResourceAsStream("fabric-dependencies."+FABRIC_LOADER_VERSION+".json");
+        InputStream resource = getClass().getClassLoader().getResourceAsStream("fabric-dependencies." + FABRIC_LOADER_VERSION + ".json");
         JsonObject json = JsonParser.object().from(resource);
         resource.close();
-        if(json.getInt("version") != 1) throw new AssertionError("version must be 1");
+        if (json.getInt("version") != 1) throw new AssertionError("version must be 1");
 
         log("Using " + appdataDir);
         Files.createDirectories(Path.of(appdataDir));
@@ -93,30 +76,8 @@ public class Installer extends SwingWorker<Exception, String> {
         log("Done!");
     }
 
-    private void copyStartScript(String argFile, String mainClass) {
-        try {
-            String startScriptFile = isWindows() ? "mindustry_fabric.cmd" : "mindustry_fabric.sh";
-            InputStream reader = getClass().getClassLoader().getResourceAsStream(startScriptFile);
-            String content = new String(reader.readAllBytes(), StandardCharsets.UTF_8);
-
-            if(isWindows()) content = content.replaceAll("\r?\n", "\r\n");
-            else content = content.replaceAll("\r?\n", "\n");
-
-            content = content.replace("{{ARG_FILE}}", argFile).
-                    replace("{{MAIN_CLASS}}", mainClass)
-                    .replace("{{ENV_SIDE}}", "client");
-
-            BufferedWriter writer = new BufferedWriter(new FileWriter(Paths.get(gameDir, startScriptFile).toFile()));
-            writer.write(content);
-            writer.close();
-            reader.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private boolean isWindows() {
-        return System.getProperty("os.name").startsWith("Windows");
+    private void log(String s) {
+        publish(s);
     }
 
     private Path locateGame() {
@@ -159,5 +120,48 @@ public class Installer extends SwingWorker<Exception, String> {
         }
 
         return classpath;
+    }
+
+    private void copyStartScript(String argFile, String mainClass) {
+        try {
+            String startScriptFile = isWindows() ? "mindustry_fabric.cmd" : "mindustry_fabric.sh";
+            InputStream reader = getClass().getClassLoader().getResourceAsStream(startScriptFile);
+            String content = new String(reader.readAllBytes(), StandardCharsets.UTF_8);
+
+            if (isWindows()) content = content.replaceAll("\r?\n", "\r\n");
+            else content = content.replaceAll("\r?\n", "\n");
+
+            content = content.replace("{{ARG_FILE}}", argFile).
+                    replace("{{MAIN_CLASS}}", mainClass)
+                    .replace("{{ENV_SIDE}}", "client");
+
+            BufferedWriter writer = new BufferedWriter(new FileWriter(Paths.get(gameDir, startScriptFile).toFile()));
+            writer.write(content);
+            writer.close();
+            reader.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private boolean isWindows() {
+        return System.getProperty("os.name").startsWith("Windows");
+    }
+
+    @Override
+    protected void process(List<String> chunks) {
+        super.process(chunks);
+        for (String chunk : chunks) {
+            onLog.accept(chunk);
+        }
+    }
+
+    @Override
+    protected void done() {
+        super.done();
+        try {
+            onDone.accept(get());
+        } catch (Exception ignored) {
+        }
     }
 }

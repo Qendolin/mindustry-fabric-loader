@@ -29,7 +29,7 @@ public final class MindustryHooks {
     }
 
     public static String insertBranding(final String brand) {
-        String fabricBrand = "Modded (fabric "+ FabricLoaderImpl.VERSION + ")";
+        String fabricBrand = "Modded (fabric " + FabricLoaderImpl.VERSION + ")";
         if (brand == null || brand.isEmpty()) {
             Log.warn(LogCategory.GAME_PROVIDER, "Null or empty branding found!", new IllegalStateException());
             return fabricBrand;

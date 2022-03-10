@@ -43,7 +43,7 @@ public class BrandingPatch extends GamePatch {
                 }
             }
         }
-        if(applied) {
+        if (applied) {
             classEmitter.accept(menuClass);
         } else {
             Log.warn(LogCategory.GAME_PATCH, "Failed to apply brand name. Instruction not found.");

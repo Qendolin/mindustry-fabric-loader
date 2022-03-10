@@ -23,7 +23,7 @@ public class MindustryVersionLookup {
 
     private static void getVersionFromProperties(FileSystem fs, MindustryVersion.Builder builder) throws IOException {
         Path file = fs.getPath("version.properties");
-        if(!Files.isRegularFile(file)) {
+        if (!Files.isRegularFile(file)) {
             throw new RuntimeException("File version.properties is invalid.");
         }
         Properties props = new Properties();
@@ -34,12 +34,12 @@ public class MindustryVersionLookup {
                 .setNumber(Integer.parseInt(props.getProperty("number")));
 
         String build = props.getProperty("build");
-        if(build.contains(".")){
+        if (build.contains(".")) {
             String[] parts = build.split("\\.");
-            try{
+            try {
                 builder.setBuild(Integer.parseInt(parts[0]));
                 builder.setRevision(Integer.parseInt(parts[1]));
-            }catch(Throwable e){
+            } catch (Throwable e) {
                 e.printStackTrace();
             }
         } else {
