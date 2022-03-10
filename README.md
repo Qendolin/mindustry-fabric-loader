@@ -26,4 +26,6 @@ game [Mindustry](https://mindustrygame.github.io/) by Anuke. As for now only the
 
 ### Developing Mods
 
-TODO
+You can use the [example-mod](./example-mod) as a template. 
+An IDEA launch configuration is included, you just need to place `Mindustry.jar` inside the `run` directory.
+Other than that, creating mods is pretty much the same as for Minecraft.
