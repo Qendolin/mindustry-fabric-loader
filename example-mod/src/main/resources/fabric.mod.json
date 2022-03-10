@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "mindustry-example-mod",
+  "version": "${version}",
+  "name": "Mindustry Example Mod",
+  "description": "",
+  "authors": [
+    "Qendolin"
+  ],
+  "contact": {
+    "homepage": "https://github.com/Qendolin/mindustry-fabric-loader"
+  },
+  "license": "MIT",
+  "icon": "assets/mindustry-example-mod/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.qendolin.mindustryexamplemod.MindustryExampleMod"
+    ]
+  },
+  "mixins": [
+    "mindustry-example-mod.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.13.3",
+    "mindustry": "7.135.*"
+  }
+}

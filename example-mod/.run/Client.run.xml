@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Mindustry Client" type="Application" factoryName="Application" activateToolWindowBeforeRun="false">
+    <option name="MAIN_CLASS_NAME" value="net.fabricmc.loader.impl.launch.knot.KnotClient" />
+    <module name="example-mod.main" />
+    <option name="VM_PARAMETERS" value="-Dfabric.skipMcProvider=true -Dfabric.side=client -Dfabric.development=true" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/example-mod/run" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
