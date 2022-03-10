@@ -1,5 +1,7 @@
 package com.qendolin.mindustryloader.gameprovider.services;
 
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Objects;
 import java.util.logging.*;
@@ -19,23 +21,36 @@ public class LoggerFactory {
         }
     };
 
+    private static final Logger ROOT_LOGGER;
+
     private static Formatter formatter = DEFAULT_FORMATTER;
 
-    private static final Formatter PROXY_FORMATTER = new SimpleFormatter() {
-        @Override
-        public synchronized String format(LogRecord lr) {
-            return formatter.format(lr);
-        }
-    };
+    static {
+        Logger logger = Logger.getLogger("mindustry-fabric");
+        logger.setUseParentHandlers(false);
+
+        StreamHandler handler = new StreamHandler(System.out, new SimpleFormatter() {
+            @Override
+            public synchronized String format(LogRecord lr) {
+                return formatter.format(lr);
+            }
+        });
+        try {
+            handler.setEncoding(StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException ignored) {}
+
+        logger.addHandler(handler);
+        ROOT_LOGGER = logger;
+    }
+
+    public static Logger getRootLogger() {
+        return ROOT_LOGGER;
+    }
 
     public static Logger getLogger(String name) {
         Logger logger = Logger.getLogger(name);
-        logger.setUseParentHandlers(false);
-
-        ConsoleHandler handler = new ConsoleHandler();
-        handler.setFormatter(PROXY_FORMATTER);
-
-        logger.addHandler(handler);
+        logger.setUseParentHandlers(true);
+        logger.setParent(ROOT_LOGGER);
         return logger;
     }
 
