@@ -3,6 +3,7 @@ package com.qendolin.mindustryloader.gameprovider.services;
 import com.qendolin.mindustryloader.gameprovider.MindustryVersion;
 import com.qendolin.mindustryloader.gameprovider.patch.BrandingPatch;
 import com.qendolin.mindustryloader.gameprovider.patch.MindustryEntrypointPatch;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.GameProviderHelper;
@@ -21,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public class MindustryGameProvider implements GameProvider {
@@ -167,6 +169,10 @@ public class MindustryGameProvider implements GameProvider {
 
     @Override
     public void launch(ClassLoader loader) {
+        if(FabricLoader.getInstance().isDevelopmentEnvironment()) {
+            LoggerFactory.getRootLogger().setLevel(Level.ALL);
+        }
+
         String targetClass;
 
         if(entrypoint.equals(CLIENT_ENTRYPOINT)) {

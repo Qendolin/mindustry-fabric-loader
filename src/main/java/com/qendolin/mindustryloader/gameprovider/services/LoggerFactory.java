@@ -26,8 +26,9 @@ public class LoggerFactory {
     private static Formatter formatter = DEFAULT_FORMATTER;
 
     static {
-        Logger logger = Logger.getLogger("mindustry-fabric");
-        logger.setUseParentHandlers(false);
+        Logger rootLogger = Logger.getLogger("mindustry-fabric");
+        rootLogger.setUseParentHandlers(false);
+        rootLogger.setLevel(Level.INFO);
 
         StreamHandler handler = new StreamHandler(System.out, new SimpleFormatter() {
             @Override
@@ -39,8 +40,8 @@ public class LoggerFactory {
             handler.setEncoding(StandardCharsets.UTF_8.name());
         } catch (UnsupportedEncodingException ignored) {}
 
-        logger.addHandler(handler);
-        ROOT_LOGGER = logger;
+        rootLogger.addHandler(handler);
+        ROOT_LOGGER = rootLogger;
     }
 
     public static Logger getRootLogger() {
