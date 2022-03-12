@@ -5,8 +5,6 @@ game [Mindustry](https://mindustrygame.github.io/) by Anuke. As for now only the
 
 ## Usage
 
----
-
 ### Loading Mods
 
 1. Go to the [releases](https://github.com/Qendolin/mindustry-fabric-loader/releases) and download the latest
@@ -29,3 +27,7 @@ game [Mindustry](https://mindustrygame.github.io/) by Anuke. As for now only the
 You can use the [example-mod](./example-mod) as a template. 
 An IDEA launch configuration is included, you just need to place `Mindustry.jar` inside the `run` directory.
 Other than that, creating mods is pretty much the same as for Minecraft.
+
+---
+
+Huge thanks @PseudoDistant for helping me out! Check out their [list of GameProviders](https://github.com/PseudoDistant/Game_Providers_List/blob/main/index.md).
