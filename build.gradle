@@ -16,8 +16,8 @@ repositories {
     }
 }
 
-sourceCompatibility = "16"
-targetCompatibility = "16"
+sourceCompatibility = 16
+targetCompatibility = 16
 compileJava.options.release.set(16)
 
 version = project_version
