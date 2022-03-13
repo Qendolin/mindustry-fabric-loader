@@ -14,7 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class MainView extends JFrame {
-    private static final String FABRIC_LOADER_VERSION = "0.13.3";
+    public static String overrideConfigPath;
 
     private JPanel root;
     private JPanel footer;
@@ -73,6 +73,7 @@ public class MainView extends JFrame {
     }
 
     private void showError(String message) {
+        log("ERROR: " + message);
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
@@ -100,6 +101,8 @@ public class MainView extends JFrame {
     }
 
     public static void main(String[] args) {
+        if(args.length > 0) overrideConfigPath = args[0];
+
         try {
             UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
         } catch (Exception ignored) {

@@ -3,26 +3,24 @@ package com.qendolin.mindustryloader.installer;
 import com.grack.nanojson.JsonArray;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonParser;
+import com.grack.nanojson.JsonParserException;
 import net.harawata.appdirs.AppDirs;
 import net.harawata.appdirs.AppDirsFactory;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 import javax.swing.*;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class Installer extends SwingWorker<Exception, String> {
-    private static final String FABRIC_LOADER_VERSION = "0.13.3";
+    private static final int VERSION = 1;
     private final String appdataDir;
     private final String gameDir;
 
@@ -46,7 +44,7 @@ public class Installer extends SwingWorker<Exception, String> {
     }
 
     private void install() throws Exception {
-        log(" === Installing fabric " + FABRIC_LOADER_VERSION + " === ");
+        log(" === Installing fabric === ");
 
         Path gamePath = locateGame();
         if (gamePath == null) {
@@ -56,22 +54,21 @@ public class Installer extends SwingWorker<Exception, String> {
             log("Found game at " + gamePath.toAbsolutePath().normalize());
         }
 
-        log("Loading library definitions");
-        InputStream resource = getClass().getClassLoader().getResourceAsStream("fabric-dependencies." + FABRIC_LOADER_VERSION + ".json");
-        JsonObject json = JsonParser.object().from(resource);
-        resource.close();
-        if (json.getInt("version") != 1) throw new AssertionError("version must be 1");
+        log("Checking out stable version");
+        InstallConfig config = loadConfig();
+        log("Loader version " + config.fabricVersion + ", Provider version" + config.providerVersion);
 
         log("Using " + appdataDir);
         Files.createDirectories(Path.of(appdataDir));
 
-        List<String> classpath = installDependencies(json);
-        File argFile = Path.of(appdataDir, FABRIC_LOADER_VERSION + ".args.txt").toFile();
+        List<String> classpath = installDependencies(new ArrayList<>(config.clientDependencies.values()));
+        File argFile = Path.of(appdataDir, config.providerVersion + ".args.txt").toFile();
         BufferedWriter writer = new BufferedWriter(new FileWriter(argFile, StandardCharsets.UTF_8));
         writer.write("-cp " + String.join(System.getProperty("path.separator"), classpath));
         writer.close();
 
-        copyStartScript(argFile.getAbsolutePath(), json.getObject("mainClass").getString("client"));
+        log("Copying start script to " + argFile.getAbsolutePath());
+        copyStartScript(argFile.getAbsolutePath(), config.mainClientClass);
 
         log("Done!");
     }
@@ -91,31 +88,27 @@ public class Installer extends SwingWorker<Exception, String> {
                 .findFirst().orElse(null);
     }
 
-    private List<String> installDependencies(JsonObject json) throws Exception {
+    private InstallConfig loadConfig() throws JsonParserException, IOException {
+        String rawJson;
+        if(MainView.overrideConfigPath != null && !MainView.overrideConfigPath.isBlank()) {
+            rawJson = Files.readString(Paths.get(MainView.overrideConfigPath));
+        } else {
+            rawJson = IOUtils.toString(new URL("https://raw.githubusercontent.com/Qendolin/mindustry-fabric-loader/stable/installer/src/main/resources/fabric-dependencies.json"), StandardCharsets.UTF_8);
+        }
+        JsonObject json = JsonParser.object().from(rawJson);
+
+        return InstallConfig.from(json);
+    }
+
+    private List<String> installDependencies(List<Dependency> dependencies) throws Exception {
         List<String> classpath = new ArrayList<>();
 
-        List<URL> urls = new ArrayList<>();
-        JsonObject libraries = json.getObject("libraries");
-        JsonArray deps = libraries.getArray("common");
+        for (Dependency dep : dependencies) {
+            log("Downloading dependency " + dep.definition + " from " + dep.url);
+            Files.createDirectories(Path.of(appdataDir, "libraries", dep.dir));
+            Path dest = Paths.get(appdataDir, "libraries", dep.dir, dep.artifact);
 
-        for (int i = 0; i < deps.size(); i++) {
-            JsonObject dep = deps.getObject(i);
-            String name = dep.getString("name");
-            String repo = dep.getString("url");
-
-            String[] parts = name.split(":");
-            String group = parts[0];
-            String artifact = parts[1];
-            String version = parts[2];
-            String base = group.replace(".", "/") + "/" + artifact + "/" + version;
-            String file = artifact + "-" + version + ".jar";
-
-            URL url = new URL(repo + base + "/" + file);
-            log("Downloading dependency " + name + " from " + url);
-            base = group.replace(".", "/") + "/" + artifact;
-            Files.createDirectories(Path.of(appdataDir, "libraries", base));
-            Path dest = Paths.get(appdataDir, "libraries", base, file);
-            Files.copy(url.openStream(), dest, StandardCopyOption.REPLACE_EXISTING);
+            FileUtils.copyURLToFile(new URL(dep.url), dest.toFile());
             classpath.add(dest.toAbsolutePath().normalize().toString());
         }
 
@@ -162,6 +155,114 @@ public class Installer extends SwingWorker<Exception, String> {
         try {
             onDone.accept(get());
         } catch (Exception ignored) {
+        }
+    }
+
+    static class InstallConfig {
+        public final String mainClientClass;
+        public final String mainServerClass;
+
+        public final String fabricVersion;
+        public final String providerVersion;
+
+        public final Map<String, Dependency> clientDependencies;
+        public final Map<String, Dependency> serverDependencies;
+
+        InstallConfig(String mainClientClass, String mainServerClass, String fabricVersion, String providerVersion, Map<String, Dependency> clientDependencies, Map<String, Dependency> serverDependencies) {
+            this.mainClientClass = mainClientClass;
+            this.mainServerClass = mainServerClass;
+            this.fabricVersion = fabricVersion;
+            this.providerVersion = providerVersion;
+            this.clientDependencies = clientDependencies;
+            this.serverDependencies = serverDependencies;
+        }
+
+        public static InstallConfig from(JsonObject json) {
+            int version = json.getInt("version");
+
+            if (json.getInt("version") > VERSION)
+                throw new AssertionError("The installer version is too old");
+            if (json.getInt("version") < VERSION)
+                throw new AssertionError("The installer version is too new");
+
+            JsonObject mainClasses = json.getObject("mainClass");
+            String mainClientClass = mainClasses.getString("client");
+            String mainServerClass = mainClasses.getString("server");
+
+            Map<String, Dependency> clientDepMap = new HashMap<>();
+            Map<String, Dependency> serverDepMap = new HashMap<>();
+
+            JsonObject libraries = json.getObject("libraries");
+            JsonArray commonDeps = libraries.getArray("common");
+            JsonArray clientDeps = libraries.getArray("client");
+            JsonArray serverDeps = libraries.getArray("server");
+
+            loadDeps(commonDeps, clientDepMap);
+            loadDeps(clientDeps, clientDepMap);
+            loadDeps(commonDeps, serverDepMap);
+            loadDeps(serverDeps, serverDepMap);
+
+            Dependency serverFabricDep = serverDepMap.get("net.fabricmc:fabric-loader");
+            Dependency clientFabricDep = clientDepMap.get("net.fabricmc:fabric-loader");
+            if(!serverFabricDep.equals(clientFabricDep))
+                throw new AssertionError("Client and Server fabric-loader dependency mismatch");
+
+            Dependency serverProviderDep = serverDepMap.get("com.github.Qendolin:mindustry-fabric-loader");
+            Dependency clientProviderDep = clientDepMap.get("com.github.Qendolin:mindustry-fabric-loader");
+            if(!serverProviderDep.equals(clientProviderDep))
+                throw new AssertionError("Client and Server mindustry-fabric-loader dependency mismatch");
+
+            return new InstallConfig(mainClientClass, mainServerClass, serverFabricDep.version, serverProviderDep.version, clientDepMap, serverDepMap);
+        }
+
+        protected static void loadDeps(JsonArray deps, Map<String, Dependency> depMap) {
+            for (int i = 0; i < deps.size(); i++) {
+                JsonObject object = deps.getObject(i);
+                String def = object.getString("name");
+                String repo = object.getString("url");
+                Dependency dep = new Dependency(repo, def);
+                depMap.put(dep.group + ":" + dep.name, dep);
+            }
+        }
+    }
+
+    static class Dependency {
+        public final String definition;
+        public final String repo;
+        public final String group;
+        public final String name;
+        public final String version;
+
+        public final String artifact;
+        public final String url;
+        public final String dir;
+
+        Dependency(String repo, String definition) {
+            this.repo = repo;
+            this.definition = definition;
+
+            String[] parts = definition.split(":");
+            this.group = parts[0];
+            this.name = parts[1];
+            this.version = parts[2];
+
+            this.artifact = name + "-" + version + ".jar";
+            this.url = repo + Path.of(group.replace(".", "/"), name, version, artifact)
+                    .toString().replace("\\", "/");
+            this.dir = Path.of(group.replace(".", "/"), name).toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Dependency that = (Dependency) o;
+            return definition.equals(that.definition) && repo.equals(that.repo);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(definition, repo);
         }
     }
 }

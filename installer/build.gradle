@@ -4,7 +4,7 @@ plugins {
 
 group 'com.qendolin.mindustryloader'
 archivesBaseName = 'mindustry-fabric-installer'
-version '0.1.0'
+version '0.1.1'
 
 repositories {
     mavenCentral()
@@ -17,7 +17,11 @@ dependencies {
     implementation group: 'com.grack', name: 'nanojson', version: '1.7'
     implementation 'net.harawata:appdirs:1.2.1'
     implementation 'com.jetbrains.intellij.java:java-gui-forms-rt:213.6777.58'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.6'
 }
+
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
 
 java {
     withSourcesJar()
