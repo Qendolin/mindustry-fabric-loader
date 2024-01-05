@@ -232,7 +232,6 @@ public class MindustryGameProvider implements GameProvider {
 
     @Override
     public void unlockClassPath(FabricLauncher launcher) {
-        launcher.setValidParentClassPath(validParentClassPath);
         launcher.addToClassPath(gameJar);
     }
 
