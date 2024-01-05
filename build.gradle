@@ -16,18 +16,19 @@ repositories {
     }
 }
 
-sourceCompatibility = 16
-targetCompatibility = 16
-compileJava.options.release.set(16)
+sourceCompatibility = 17
+targetCompatibility = 17
+compileJava.options.release.set(17)
 
 version = project_version
 group = "com.qendolin.mindustryloader"
-archivesBaseName = "MindutryGameProvider"
+archivesBaseName = "mindustry-fabric-loader"
 
 dependencies {
+    // Copied from https://github.com/FabricMC/fabric-loader/blob/master/build.gradle
     testImplementation 'org.jetbrains:annotations:22.0.0'
 
-    api group: 'net.fabricmc', name: 'fabric-loader', version: loader_version
+    api "net.fabricmc:fabric-loader:${loader_version}"
 
     api "org.ow2.asm:asm:${project.asm_version}"
     api "org.ow2.asm:asm-analysis:${project.asm_version}"
@@ -37,11 +38,11 @@ dependencies {
 
     api("net.fabricmc:sponge-mixin:${project.mixin_version}") {
         exclude module: 'launchwrapper'
-        exclude module: 'guava'
+        exclude group: 'com.google.guava'
+        exclude group: 'com.google.code.gson'
     }
-    api 'net.fabricmc:tiny-mappings-parser:0.3.0+build.17'
-    api 'net.fabricmc:tiny-remapper:0.8.1'
     api 'net.fabricmc:access-widener:2.1.0'
+    api "io.github.llamalad7:mixinextras-fabric:${mixin_extras_version}"
 
 }
 

@@ -17,9 +17,10 @@ public class BrandingPatch extends GamePatch {
 
     private static final int VAR_INDEX = 3;
 
+
     @Override
-    public void process(FabricLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
-        ClassNode menuClass = readClass(classSource.apply("mindustry.ui.fragments.MenuFragment"));
+    public void process(FabricLauncher launcher, Function<String, ClassNode> classSource, Consumer<ClassNode> classEmitter) {
+        ClassNode menuClass = classSource.apply("mindustry.ui.fragments.MenuFragment");
         boolean applied = false;
         for (MethodNode node : menuClass.methods) {
             if (node.name.equals("build") && node.desc.equals("(Larc/scene/Group;)V")) {
@@ -31,11 +32,11 @@ public class BrandingPatch extends GamePatch {
                     if (insn.getOpcode() == Opcodes.ASTORE && insn instanceof VarInsnNode varInsn && varInsn.var == VAR_INDEX) {
                         it.add(new VarInsnNode(Opcodes.ALOAD, VAR_INDEX));
                         it.add(new MethodInsnNode(
-                                Opcodes.INVOKESTATIC,
-                                MindustryHooks.INTERNAL_NAME,
-                                "insertBranding",
-                                "(Ljava/lang/String;)Ljava/lang/String;",
-                                false));
+                            Opcodes.INVOKESTATIC,
+                            MindustryHooks.INTERNAL_NAME,
+                            "insertBranding",
+                            "(Ljava/lang/String;)Ljava/lang/String;",
+                            false));
                         it.add(new VarInsnNode(Opcodes.ASTORE, VAR_INDEX));
                         applied = true;
                         break;

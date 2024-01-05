@@ -2,6 +2,7 @@ package com.qendolin.mindustryloader.gameprovider.patch;
 
 import com.qendolin.mindustryloader.gameprovider.services.MindustryGameProvider;
 import com.qendolin.mindustryloader.gameprovider.services.MindustryHooks;
+import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.impl.game.patch.GamePatch;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
 import net.fabricmc.loader.impl.util.log.Log;
@@ -16,22 +17,20 @@ import java.util.function.Function;
 
 public class MindustryEntrypointPatch extends GamePatch {
     @Override
-    public void process(FabricLauncher launcher, Function<String, ClassReader> classSource,
-                        Consumer<ClassNode> classEmitter) {
+    public void process(FabricLauncher launcher, Function<String, ClassNode> classSource, Consumer<ClassNode> classEmitter) {
         String entrypoint = launcher.getEntrypoint();
+        EnvType envType = launcher.getEnvironmentType();
         Log.debug(LogCategory.GAME_PATCH, "Entrypoint is " + entrypoint);
-        ClassNode entrypointClazz = readClass(classSource.apply(entrypoint));
+        ClassNode entrypointClazz = classSource.apply(entrypoint);
         if (entrypointClazz == null) {
             throw new LinkageError("Could not load entrypoint class " + entrypoint + "!");
         }
         Log.debug(LogCategory.GAME_PATCH, "Entrypoint class is " + entrypointClazz);
 
-        if (entrypoint.equals(MindustryGameProvider.CLIENT_ENTRYPOINT)) {
+        if (envType == EnvType.CLIENT) {
             injectClientHook(entrypointClazz);
-        } else if (entrypoint.equals(MindustryGameProvider.SERVER_ENTRYPOINT)) {
+        } else if(envType == EnvType.SERVER) {
             injectServerHook(entrypointClazz);
-        } else {
-            throw new IllegalArgumentException("Unknown entrypoint " + entrypoint + ".");
         }
 
         classEmitter.accept(entrypointClazz);

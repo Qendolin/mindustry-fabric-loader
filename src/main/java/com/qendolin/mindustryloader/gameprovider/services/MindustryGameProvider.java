@@ -1,21 +1,25 @@
 package com.qendolin.mindustryloader.gameprovider.services;
 
+import com.qendolin.mindustryloader.gameprovider.GameLibraries;
 import com.qendolin.mindustryloader.gameprovider.MindustryVersion;
 import com.qendolin.mindustryloader.gameprovider.patch.BrandingPatch;
 import com.qendolin.mindustryloader.gameprovider.patch.MindustryEntrypointPatch;
+import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.GameProviderHelper;
+import net.fabricmc.loader.impl.game.LibClassifier;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
 import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
 import net.fabricmc.loader.impl.metadata.ContactInformationImpl;
 import net.fabricmc.loader.impl.util.Arguments;
-import net.fabricmc.loader.impl.util.SystemProperties;
+import net.fabricmc.loader.impl.util.ExceptionUtil;
 import net.fabricmc.loader.impl.util.log.Log;
 import net.fabricmc.loader.impl.util.log.LogCategory;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -23,7 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class MindustryGameProvider implements GameProvider {
 
@@ -45,6 +49,8 @@ public class MindustryGameProvider implements GameProvider {
     private Arguments arguments;
     private String entrypoint;
     private Path gameJar;
+    private EnvType envType;
+    private Collection<Path> validParentClassPath;
     private MindustryVersion gameVersion;
 
     public MindustryVersion getGameVersion() {
@@ -121,36 +127,87 @@ public class MindustryGameProvider implements GameProvider {
         return true;
     }
 
+//    @Override
+//    public boolean locateGame(FabricLauncher launcher, String[] args) {
+//        arguments = new Arguments();
+//        arguments.parse(args);
+//
+//        List<String> gameLocations = new ArrayList<>();
+//        if (System.getProperty(SystemProperties.GAME_JAR_PATH) != null) {
+//            gameLocations.add(System.getProperty(SystemProperties.GAME_JAR_PATH));
+//        }
+//        gameLocations.add("./jre/desktop.jar");
+//        gameLocations.add("./Mindustry.jar");
+//        gameLocations.add("./desktop-release.jar");
+//        gameLocations.add("./desktop.jar");
+//
+//        List<Path> jarPaths = gameLocations.stream()
+//                .map(path -> Paths.get(path).toAbsolutePath().normalize())
+//                .filter(Files::exists).toList();
+//        GameProviderHelper.FindResult result = GameProviderHelper.findFirst(jarPaths, new HashMap<>(), true, ENTRYPOINTS);
+//
+//        if (result == null || result.path == null) {
+//            Log.error(LogCategory.GAME_PROVIDER, "Could not locate game. Looked at: \n" + gameLocations.stream()
+//                    .map(path -> " - " + Paths.get(path).toAbsolutePath().normalize())
+//                    .collect(Collectors.joining("\n")));
+//            return false;
+//        }
+//
+//        entrypoint = result.name;
+//        gameJar = result.path;
+//        gameVersion = MindustryVersionLookup.getVersionFromGameJar(gameJar);
+//        processArgumentMap(arguments);
+//        return true;
+//    }
+
     @Override
     public boolean locateGame(FabricLauncher launcher, String[] args) {
         arguments = new Arguments();
         arguments.parse(args);
+        processArgumentMap(arguments);
 
-        List<String> gameLocations = new ArrayList<>();
-        if (System.getProperty(SystemProperties.GAME_JAR_PATH) != null) {
-            gameLocations.add(System.getProperty(SystemProperties.GAME_JAR_PATH));
+        envType = launcher.getEnvironmentType();
+        Path commonJarPath = GameProviderHelper.getCommonGameJar();
+        Path envJarPath = GameProviderHelper.getEnvGameJar(launcher.getEnvironmentType());
+        try {
+            LibClassifier<GameLibraries> classifier = new LibClassifier<>(GameLibraries.class, envType, this);
+            GameLibraries envGameLib = envType == EnvType.CLIENT ? GameLibraries.MINDUSTRY_CLIENT : GameLibraries.MINDUSTRY_SERVER;
+
+            // The classifier will process (index) the jar files (or folders) and look
+            // for all paths in GameLibraries
+            if(commonJarPath != null) {
+                classifier.process(commonJarPath);
+            } else if(envJarPath != null) {
+                classifier.process(envJarPath);
+            } else {
+                // You can pass the path to the game jar via the classpath
+                // when you launch Knot, but for simple cases a hard-coded list is fine.
+                Optional<Path> path = Stream.of(
+                    Path.of("./jre/desktop.jar"),
+                    Path.of("./Mindustry.jar"),
+                    Path.of("./desktop-release.jar"),
+                    Path.of("./desktop.jar")
+                ).filter(Files::exists).findFirst();
+                if(path.isPresent()) {
+                    classifier.process(path.get());
+                }
+            }
+            classifier.process(launcher.getClassPath());
+
+            gameJar = classifier.getOrigin(envGameLib);
+            entrypoint = classifier.getClassName(envGameLib);
+            validParentClassPath = classifier.getSystemLibraries();
+        } catch (IOException e) {
+            // Wonderful exception handling
+            throw ExceptionUtil.wrap(e);
         }
-        gameLocations.add("./jre/desktop.jar");
-        gameLocations.add("./Mindustry.jar");
-        gameLocations.add("./desktop-release.jar");
-        gameLocations.add("./desktop.jar");
 
-        List<Path> jarPaths = gameLocations.stream()
-                .map(path -> Paths.get(path).toAbsolutePath().normalize())
-                .filter(Files::exists).toList();
-        GameProviderHelper.FindResult result = GameProviderHelper.findFirst(jarPaths, new HashMap<>(), true, ENTRYPOINTS);
-
-        if (result == null || result.path == null) {
-            Log.error(LogCategory.GAME_PROVIDER, "Could not locate game. Looked at: \n" + gameLocations.stream()
-                    .map(path -> " - " + Paths.get(path).toAbsolutePath().normalize())
-                    .collect(Collectors.joining("\n")));
+        if (gameJar == null) {
+            Log.error(LogCategory.GAME_PROVIDER, "Could not locate game.");
             return false;
         }
 
-        entrypoint = result.name;
-        gameJar = result.path;
         gameVersion = MindustryVersionLookup.getVersionFromGameJar(gameJar);
-        processArgumentMap(arguments);
         return true;
     }
 
@@ -165,7 +222,7 @@ public class MindustryGameProvider implements GameProvider {
 
     @Override
     public void initialize(FabricLauncher launcher) {
-        TRANSFORMER.locateEntrypoints(launcher, gameJar);
+        TRANSFORMER.locateEntrypoints(launcher, Collections.singletonList(gameJar));
     }
 
     @Override
@@ -175,6 +232,7 @@ public class MindustryGameProvider implements GameProvider {
 
     @Override
     public void unlockClassPath(FabricLauncher launcher) {
+        launcher.setValidParentClassPath(validParentClassPath);
         launcher.addToClassPath(gameJar);
     }
 
@@ -184,15 +242,7 @@ public class MindustryGameProvider implements GameProvider {
             LoggerFactory.getRootLogger().setLevel(Level.ALL);
         }
 
-        String targetClass;
-
-        if (entrypoint.equals(CLIENT_ENTRYPOINT)) {
-            targetClass = CLIENT_MAIN;
-        } else if (entrypoint.equals(SERVER_ENTRYPOINT)) {
-            targetClass = SERVER_MAIN;
-        } else {
-            throw new RuntimeException("Unknown entrypoint " + entrypoint + ".");
-        }
+        String targetClass = envType == EnvType.CLIENT ? CLIENT_MAIN : SERVER_MAIN;
 
         try {
             Class<?> c = loader.loadClass(targetClass);
