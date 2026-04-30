@@ -50,7 +50,6 @@ public class MindustryGameProvider implements GameProvider {
     private String entrypoint;
     private Path gameJar;
     private EnvType envType;
-    private Collection<Path> validParentClassPath;
     private MindustryVersion gameVersion;
 
     public MindustryVersion getGameVersion() {
@@ -119,7 +118,7 @@ public class MindustryGameProvider implements GameProvider {
 
     @Override
     public Set<BuiltinTransform> getBuiltinTransforms(String className) {
-        return Set.of();
+        return Collections.emptySet();
     }
 
     @Override
@@ -150,10 +149,10 @@ public class MindustryGameProvider implements GameProvider {
                 // You can pass the path to the game jar via the classpath
                 // when you launch Knot, but for simple cases a hard-coded list is fine.
                 Optional<Path> path = Stream.of(
-                    Path.of("./jre/desktop.jar"),
-                    Path.of("./Mindustry.jar"),
-                    Path.of("./desktop-release.jar"),
-                    Path.of("./desktop.jar")
+                    Paths.get("./jre/desktop.jar"),
+                    Paths.get("./Mindustry.jar"),
+                    Paths.get("./desktop-release.jar"),
+                    Paths.get("./desktop.jar")
                 ).filter(Files::exists).findFirst();
                 if (path.isPresent()) {
                     classifier.process(path.get());
@@ -163,7 +162,6 @@ public class MindustryGameProvider implements GameProvider {
 
             gameJar = classifier.getOrigin(envGameLib);
             entrypoint = classifier.getClassName(envGameLib);
-            validParentClassPath = classifier.getSystemLibraries();
         } catch (IOException e) {
             // Wonderful exception handling
             throw ExceptionUtil.wrap(e);
@@ -183,7 +181,7 @@ public class MindustryGameProvider implements GameProvider {
             arguments.put("gameDir", getLaunchDirectory(arguments).toAbsolutePath().normalize().toString());
         }
 
-        Path launchDir = Path.of(arguments.get("gameDir"));
+        Path launchDir = Paths.get(arguments.get("gameDir"));
         Log.debug(LogCategory.GAME_PROVIDER, "Launch directory is " + launchDir);
     }
 

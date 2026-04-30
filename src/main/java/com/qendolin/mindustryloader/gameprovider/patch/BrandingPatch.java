@@ -28,17 +28,21 @@ public class BrandingPatch extends GamePatch {
                 ListIterator<AbstractInsnNode> it = node.instructions.iterator();
                 while (it.hasNext()) {
                     AbstractInsnNode insn = it.next();
-                    if (insn.getOpcode() == Opcodes.ASTORE && insn instanceof VarInsnNode varInsn && varInsn.var == VAR_INDEX) {
-                        it.add(new VarInsnNode(Opcodes.ALOAD, VAR_INDEX));
-                        it.add(new MethodInsnNode(
-                            Opcodes.INVOKESTATIC,
-                            MindustryHooks.INTERNAL_NAME,
-                            "insertBranding",
-                            "(Ljava/lang/String;)Ljava/lang/String;",
-                            false));
-                        it.add(new VarInsnNode(Opcodes.ASTORE, VAR_INDEX));
-                        applied = true;
-                        break;
+                    if (insn.getOpcode() == Opcodes.ASTORE && insn instanceof VarInsnNode) {
+                        VarInsnNode varInsn = (VarInsnNode) insn;
+                        if (varInsn.var == VAR_INDEX) {
+                            it.add(new VarInsnNode(Opcodes.ALOAD, VAR_INDEX));
+                            it.add(new MethodInsnNode(
+                                Opcodes.INVOKESTATIC,
+                                MindustryHooks.INTERNAL_NAME,
+                                "insertBranding",
+                                "(Ljava/lang/String;)Ljava/lang/String;",
+                                false));
+                            it.add(new VarInsnNode(Opcodes.ASTORE, VAR_INDEX));
+                            applied = true;
+                            break;
+                        }
+
                     }
                 }
             }

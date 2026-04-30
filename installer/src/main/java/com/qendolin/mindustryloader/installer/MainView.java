@@ -48,7 +48,7 @@ public class MainView extends JFrame {
 
         installButton.addActionListener(ev -> {
             Path gameDirectory = Paths.get(pathField.getText());
-            if (pathField.getText().isBlank()) {
+            if (pathField.getText() == null || pathField.getText().trim().isEmpty()) {
                 showError("No game directory selected!");
                 return;
             }

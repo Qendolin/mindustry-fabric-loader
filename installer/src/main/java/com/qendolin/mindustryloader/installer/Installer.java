@@ -32,7 +32,7 @@ public class Installer extends SwingWorker<Exception, String> {
         this.gameDir = gameDir;
         this.fetchLatestVersion = fetchLatestVersion;
         AppDirs appDirs = AppDirsFactory.getInstance();
-        appdataDir = Path.of(appDirs.getUserDataDir("Mindustry_Fabric", null, null)).toString();
+        appdataDir = Paths.get(appDirs.getUserDataDir("Mindustry_Fabric", null, null)).toString();
     }
 
     @Override
@@ -49,7 +49,7 @@ public class Installer extends SwingWorker<Exception, String> {
         log(" === Installing fabric === ");
 
         Optional<Path> gamePathOpt = locateGame();
-        if (gamePathOpt.isEmpty()) {
+        if (!gamePathOpt.isPresent()) {
             log("Could not find game in specified directory.");
             return;
         }
@@ -61,13 +61,13 @@ public class Installer extends SwingWorker<Exception, String> {
         log("Loader version " + config.fabricVersion + ", Provider version" + config.providerVersion);
 
         log("Using " + appdataDir);
-        Files.createDirectories(Path.of(appdataDir));
+        Files.createDirectories(Paths.get(appdataDir));
 
         List<String> classpath = installDependencies(new ArrayList<>(config.clientDependencies.values()));
-        File argFile = Path.of(appdataDir, config.providerVersion + ".args.txt").toFile();
-        BufferedWriter writer = new BufferedWriter(new FileWriter(argFile, StandardCharsets.UTF_8));
-        writer.write("-cp " + String.join(File.pathSeparator, classpath));
-        writer.close();
+        File argFile = Paths.get(appdataDir, config.providerVersion + ".args.txt").toFile();
+        try (BufferedWriter writer = Files.newBufferedWriter(argFile.toPath(), StandardCharsets.UTF_8)) {
+            writer.write("-cp " + String.join(File.pathSeparator, classpath));
+        }
 
         log("Copying start script to " + argFile.getAbsolutePath());
         copyStartScript(argFile.getAbsolutePath(), config.mainClientClass);
@@ -85,7 +85,7 @@ public class Installer extends SwingWorker<Exception, String> {
         locations.add("./Mindustry.jar");
         locations.add("./desktop-release.jar");
         locations.add("./desktop.jar");
-        return locations.stream().map(path -> Path.of(gameDir, path))
+        return locations.stream().map(path -> Paths.get(gameDir, path))
             .filter(Files::isRegularFile)
             .findFirst();
     }
@@ -93,8 +93,8 @@ public class Installer extends SwingWorker<Exception, String> {
     private InstallConfig loadConfig() throws JsonParserException, IOException {
         String rawJson;
 
-        if (MainView.overrideConfigPath != null && !MainView.overrideConfigPath.isBlank()) {
-            rawJson = Files.readString(Paths.get(MainView.overrideConfigPath));
+        if (MainView.overrideConfigPath != null && !MainView.overrideConfigPath.trim().isEmpty()) {
+            rawJson = FileUtils.readFileToString(new File(MainView.overrideConfigPath), StandardCharsets.UTF_8);
         } else {
             if(fetchLatestVersion) {
                 String urlString = "https://raw.githubusercontent.com/Qendolin/mindustry-fabric-loader/stable/installer/src/main/resources/fabric-dependencies.json";
@@ -104,7 +104,7 @@ public class Installer extends SwingWorker<Exception, String> {
                     if (is == null) {
                         throw new IOException("The installer is faulty: Unable to read fabric dependencies file.");
                     }
-                    rawJson = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                    rawJson = new String(IOUtils.toByteArray(is), StandardCharsets.UTF_8);
                 }
             }
         }
@@ -118,7 +118,7 @@ public class Installer extends SwingWorker<Exception, String> {
 
         for (Dependency dep : dependencies) {
             log("Downloading dependency " + dep.definition + " from " + dep.url);
-            Files.createDirectories(Path.of(appdataDir, "libraries", dep.dir));
+            Files.createDirectories(Paths.get(appdataDir, "libraries", dep.dir));
             Path dest = Paths.get(appdataDir, "libraries", dep.dir, dep.artifact);
 
             FileUtils.copyURLToFile(URI.create(dep.url).toURL(), dest.toFile());
@@ -131,12 +131,12 @@ public class Installer extends SwingWorker<Exception, String> {
     private void copyStartScript(String argFile, String mainClass) {
         try {
             String startScriptFile = isWindows() ? "mindustry_fabric.cmd" : "mindustry_fabric.sh";
-            InputStream reader = getClass().getClassLoader().getResourceAsStream(startScriptFile);
-            if(reader == null) {
+            InputStream is = getClass().getClassLoader().getResourceAsStream(startScriptFile);
+            if(is == null) {
                 throw new RuntimeException("The installer is faulty: Unable to read start script resource.");
             }
 
-            String content = new String(reader.readAllBytes(), StandardCharsets.UTF_8);
+            String content = new String(IOUtils.toByteArray(is), StandardCharsets.UTF_8);
 
             if (isWindows()) content = content.replaceAll("\r?\n", "\r\n");
             else content = content.replaceAll("\r?\n", "\n");
@@ -148,7 +148,7 @@ public class Installer extends SwingWorker<Exception, String> {
             BufferedWriter writer = new BufferedWriter(new FileWriter(Paths.get(gameDir, startScriptFile).toFile()));
             writer.write(content);
             writer.close();
-            reader.close();
+            is.close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -264,9 +264,9 @@ public class Installer extends SwingWorker<Exception, String> {
             this.version = parts[2];
 
             this.artifact = name + "-" + version + ".jar";
-            this.url = repo + Path.of(group.replace(".", "/"), name, version, artifact)
+            this.url = repo + Paths.get(group.replace(".", "/"), name, version, artifact)
                 .toString().replace("\\", "/");
-            this.dir = Path.of(group.replace(".", "/"), name).toString();
+            this.dir = Paths.get(group.replace(".", "/"), name).toString();
         }
 
         @Override
