@@ -113,13 +113,13 @@ public class MindustryGameProvider implements GameProvider {
     }
 
     @Override
-    public boolean isObfuscated() {
+    public boolean requiresUrlClassLoader() {
         return false;
     }
 
     @Override
-    public boolean requiresUrlClassLoader() {
-        return false;
+    public Set<BuiltinTransform> getBuiltinTransforms(String className){
+        return Set.of(BuiltinTransform.CLASS_TWEAKS);
     }
 
     @Override
@@ -282,5 +282,11 @@ public class MindustryGameProvider implements GameProvider {
 
         if (writeIdx < ret.length) ret = Arrays.copyOf(ret, writeIdx);
         return ret;
+    }
+
+
+    @Override
+    public boolean hasAwtSupport(){
+        return true;
     }
 }
