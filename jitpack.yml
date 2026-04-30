@@ -1,3 +1,6 @@
+# Note: The jitpack path is case-sensitive.
+# So com/github/qendolin/mindustry-fabric-loader and com/github/Qendolin/mindustry-fabric-loader are not the same!
+
 jdk:
   - openjdk25
 before_install:
